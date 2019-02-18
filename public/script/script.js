@@ -64,14 +64,15 @@ $(()=>{
         $('#log').hide();
     });
 
-    $("#artist").click((e)=>{
-        e.preventDefault();
+    function fotoRendring(){
+
         let application = $("#application");
         application.empty();
         let result_form = $(`<div id="result_form">`);
         let form = $(`<div id="form">`);
+        let form_id = $(`<form method="post" id="ajax_form" action="">`).click((e)=> artistHandler(e));
         let mydiv = $(`<div id="mydiv">`);
-        application.append(result_form,form,mydiv);
+        application.append(result_form,form,form_id,mydiv);
         const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
         if(user !== null) {
             const header = {"Token": user.token};
@@ -83,20 +84,20 @@ $(()=>{
                 type: 'GET',
                 dataType: 'html'
             }).then(response => {
-                document.getElementById('form').innerHTML = response;
+                document.getElementById('ajax_form').innerHTML = response;
                 getAllpostsArtists();
             });
         }
-    });
+    };
 
-
+    fotoRendring();
 
 
 
 
     const Artists =(response)=>{
         let  div = $(`<div id=${response._id} class="mydiv">`);
-        let image = $(`<img  width="200" height="80" alt=""/>`).attr('src', `http://localhost:3333/uploads/${response.image}`);
+        let image = $(`<img  width="200" alt=""/>`).attr('src', `http://localhost:3333/uploads/${response.image}`).click((e)=> PopUpFoto(response.image,e));
         let name = $(`<p>`).text(`Имя исполнителя: ${response.name}`);
         let information = $(`<p>`).text(`Информация: ${response.information}`);
         if(response.button === "1") {
@@ -150,31 +151,41 @@ $(()=>{
 
 
     const artistHandler =(e) =>{
-        let idForm = $("#ajax_form");
-        if(!idForm[0].checkValidity()){
-            $('<input type="submit">').hide().appendTo(idForm).click().remove();
-            return;
+        if(e.target.id == "btn_artist"){
+            let idForm = $("#ajax_form");
+            if(!idForm[0].checkValidity()){
+                $('<input type="submit">').hide().appendTo(idForm).click().remove();
+                return;
+            }
+            e.preventDefault();
+            let result_form = $("#result_form");
+            let mydiv = $("#mydiv");
+            const data = new FormData(document.getElementById("ajax_form"));
+            const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+            if(user !== null) {
+                const header = {"Token": user.token};
+                $.ajax({
+                    url: 'http://localhost:3333/fotos',
+                    data: data,
+                    headers: header,
+                    processData: false,
+                    contentType: false,
+                    type: 'POST'
+                }).then((response) => {
+                    result_form.empty();
+                    result_form.text(JSON.stringify(response));
+                    mydiv.empty();
+                    getAllpostsArtists();
+                });
+            }
         }
-        e.preventDefault();
-        let result_form = $("#result_form");
-        let mydiv = $("#mydiv");
-        const data = new FormData(document.getElementById("ajax_form"));
-        const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
-        if(user !== null) {
-            const header = {"Token": user.token};
-            $.ajax({
-                url: 'http://localhost:3333/fotos',
-                data: data,
-                headers: header,
-                processData: false,
-                contentType: false,
-                type: 'POST'
-            }).then((response) => {
-                result_form.empty();
-                result_form.text(JSON.stringify(response));
-                mydiv.empty();
-                getAllpostsArtists();
-            });
-        }
+
      };
+
+    const PopUpFoto =(id,e) =>{
+        e.preventDefault();
+        console.log(id);
+        $('#myModal').modal(focus)
+        $('#fotoId').attr('src', `http://localhost:3333/uploads/${id}`)
+    };
 });
