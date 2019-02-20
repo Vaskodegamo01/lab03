@@ -71,7 +71,7 @@ $(()=>{
         let result_form = $(`<div id="result_form">`);
         let form = $(`<div id="form">`);
         let form_id = $(`<form method="post" id="ajax_form" action="">`).click((e)=> artistHandler(e));
-        let mydiv = $(`<div id="mydiv">`);
+        let mydiv = $(`<div id="mydiv" class="container">`);
         application.append(result_form,form,form_id,mydiv);
         const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
         if(user !== null) {
@@ -88,25 +88,25 @@ $(()=>{
                 getAllpostsArtists();
             });
         }
-    };
-
+    }
     fotoRendring();
 
 
-
-
     const Artists =(response)=>{
-        let  div = $(`<div id=${response._id} class="mydiv">`);
-        let image = $(`<img  width="200" alt=""/>`).attr('src', `http://localhost:3333/uploads/${response.image}`).click((e)=> PopUpFoto(response.image,e));
+        let div_classCol = $(`<div class="col-md-4">`);
+        let  div = $(`<div id=${response._id} class="thumbnail">`);
+        let image = $(`<img  alt="" width="150"/>`).attr('src', `http://localhost:3333/uploads/${response.image}`).click((e)=> PopUpFoto(response.image,e));
         let name = $(`<p>`).text(`Имя исполнителя: ${response.name}`);
         let information = $(`<p>`).text(`Информация: ${response.information}`);
         if(response.button === "1") {
             let deleteArtists = $(`<button type="button" class="btn btn-default">Delete by ID</button>`).click((e)=> deleteArtistsById(response._id,e));
             div.append(image, name, information, deleteArtists);
+            div_classCol.append(div);
         }else{
             div.append(image, name, information);
+            div_classCol.append(div);
         }
-        return div;
+        return div_classCol;
     };
 
     const deleteArtistsById = (id,e) =>{
@@ -141,17 +141,86 @@ $(()=>{
                 contentType: false,
                 type: 'GET'
             }).then((response) => {
+                let i = 0;
+                let container = [];
+                let div_classCol = $(`<div class="row">`);
+                let count = response.length;
                 const artists = response.map((artist) => {
-                    return Artists(artist);
+                    count--;
+                    if (i<=2) {
+                        container.push(Artists(artist));
+                        i++;
+                    }
+                    if (i === 2 || count === 0) {
+                        i=0;
+                        return div_classCol.append(container);
+                    }
                 });
                 mydiv.html(artists);
             });
         }
     };
 
-
+    var imageResized, imageDataUrl;
     const artistHandler =(e) =>{
-        if(e.target.id == "btn_artist"){
+        if(e.target.id === "image") {
+            const dataURLToBlob = function (dataURL) {
+                let raw;
+                let contentType;
+                let parts;
+                const BASE64_MARKER = ';base64,';
+                if (dataURL.indexOf(BASE64_MARKER) === -1) {
+                    parts = dataURL.split(',');
+                    contentType = parts[0].split(':')[1];
+                    raw = parts[1];
+
+                    return new Blob([raw], {type: contentType});
+                }
+
+                parts = dataURL.split(BASE64_MARKER);
+                raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+
+                const uInt8Array = new Uint8Array(rawLength);
+
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+
+                return new Blob([uInt8Array], {type: "image/jpg"});
+            };
+            image.addEventListener("change", doOpen, false);
+
+            function doOpen(evt) {
+                let canvas = document.createElement("canvas");
+                let file = evt.target.files[0];
+                let reader = new FileReader();
+
+                reader.onload = function (readerEvent) {
+                    const img = new Image();
+                    img.onload = function () {
+                        let ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0);
+                        let width = 150;
+                        let height = 100;
+                        canvas.width = 150;
+                        canvas.height =100;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        imageDataUrl = canvas.toDataURL('image/jpeg');
+                        console.log(imageDataUrl);
+                        imageResized = dataURLToBlob(imageDataUrl);
+                        console.log(imageResized);
+                    };
+                    img.src = readerEvent.target.result;
+                    evt.target.files[0] = readerEvent.target.result;
+                };
+
+                if (file) {
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+        if(e.target.id === "btn_artist"){
             let idForm = $("#ajax_form");
             if(!idForm[0].checkValidity()){
                 $('<input type="submit">').hide().appendTo(idForm).click().remove();
@@ -161,6 +230,8 @@ $(()=>{
             let result_form = $("#result_form");
             let mydiv = $("#mydiv");
             const data = new FormData(document.getElementById("ajax_form"));
+            data.delete("image");
+            data.append("image",imageResized,"1.jpeg");
             const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
             if(user !== null) {
                 const header = {"Token": user.token};
@@ -184,8 +255,7 @@ $(()=>{
 
     const PopUpFoto =(id,e) =>{
         e.preventDefault();
-        console.log(id);
-        $('#myModal').modal(focus)
-        $('#fotoId').attr('src', `http://localhost:3333/uploads/${id}`)
+        $('#myModal').modal(focus);
+        $('#fotoId').attr('src', `http://localhost:3333/uploads/${id}`);
     };
 });
