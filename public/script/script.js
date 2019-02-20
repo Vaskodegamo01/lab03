@@ -92,6 +92,7 @@ $(()=>{
     fotoRendring();
 
 
+
     const Artists =(response)=>{
         let div_classCol = $(`<div class="col-md-4">`);
         let  div = $(`<div id=${response._id} class="thumbnail">`);
@@ -160,6 +161,35 @@ $(()=>{
             });
         }
     };
+
+
+    const getAllpostsArtistsNoUser = () => {
+        let mydiv = $("#mydiv");
+           $.ajax({
+                url: 'http://localhost:3333/fotos/all',
+                processData: false,
+                contentType: false,
+                type: 'GET'
+            }).then((response) => {
+                let i = 0;
+                let container = [];
+                let div_classCol = $(`<div class="row">`);
+                let count = response.length;
+                const artists = response.map((artist) => {
+                    count--;
+                    if (i<=2) {
+                        container.push(Artists(artist));
+                        i++;
+                    }
+                    if (i === 2 || count === 0) {
+                        i=0;
+                        return div_classCol.append(container);
+                    }
+                });
+                mydiv.html(artists);
+            });
+    };
+    getAllpostsArtistsNoUser();
 
     var imageResized, imageDataUrl;
     const artistHandler =(e) =>{

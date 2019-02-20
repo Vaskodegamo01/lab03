@@ -36,6 +36,10 @@ router.get("/", auth, async (req, res)=>{
     res.send(rr);
 
 });
+
+router.get("/:all", async (req, res)=>{
+    res.send(await Fotos.find());
+});
 router.post("/", [auth, upload.single("image")], (req, res) => {
     const artistData = req.body;
     if (req.file) artistData.image = req.file.filename;
